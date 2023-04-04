@@ -1,9 +1,10 @@
+import config
 import joblib
 import streamlit as st
 import openai
 from streamlit_chat import message
 import os
-openai.api_key = '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'
+openai.api_key = config.api_key
 
 class Application:
     def __init__(self):
