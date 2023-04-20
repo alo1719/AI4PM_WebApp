@@ -123,9 +123,10 @@ class Application:
             st.session_state['dialog_user'].append(user_input)
             st.session_state['dialog_bot'].append(output)
             print(st.session_state['msgs'])
+            
         
         if st.session_state['dialog_bot']:
-            if st.session_state['dialog_bot'] == st.session_state['dialog_user']:
+            if len(st.session_state['dialog_bot']) == len(st.session_state['dialog_user']):
                 for i in range(len(st.session_state['dialog_bot'])-1, -1, -1):
                     message(st.session_state["dialog_bot"][i], key=str(i))
                     message(st.session_state['dialog_user'][i], is_user=True, key=str(i) + '_user')
