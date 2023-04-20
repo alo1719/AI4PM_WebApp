@@ -36,13 +36,15 @@ class Application:
             st.session_state['what'] = ''
         if 'other' not in st.session_state:
             st.session_state['other'] = ''
+        if 'background' not in st.session_state:
+            st.session_state['background'] = None
 
         st.set_page_config(page_title="Stress Detection", page_icon=":sunglasses:", layout="wide")
         st.title("Stress Detection")
         st.write("AI4PM Stress Detection Group")
 
         st.write("")  # Blank line
-
+        
         # Form
         with st.form(key='info'):
             name = st.text_input(label='What is your name?')
@@ -63,8 +65,23 @@ class Application:
             st.session_state['who'] = str(who)
             st.session_state['what'] = str(what)
             st.session_state['other'] = str(other)
+            st.session_state['background'] = "\nThe user's name is {}, is {} years old {} {}. When this user suffer from stress they would like to talk to {} in a {} way. This user also wrote '{}'".format(st.session_state['name'], st.session_state['age'], st.session_state['gender'], st.session_state['profession'], st.session_state['who'], st.session_state['what'], st.session_state['other'])
 
         st.write("")  # Blank line
+
+        system_prompt = "I am now making you the dedicated chatbot for our stress management software for introverted stress-prone people. You will consistently provide patient, detailed, thoughtful, and gentle service to our users. I need you to be emotionally supportive and troubleshoot for them in conversations. You will listen to their needs, reassure them and guide them to speak their mind rather than give direct advice. You may play the role of their family or friend to help them."
+        if st.session_state['background']: system_prompt += st.session_state['background']
+        system_prompt_object = {"role": "system", "content": system_prompt}
+        print(system_prompt_object)
+        has_system_prompt = False
+        for i in range(len(st.session_state['msgs'])):
+            if st.session_state['msgs'][i]['role'] == 'system':
+                has_system_prompt = True
+                if st.session_state['msgs'][i]['content'] != system_prompt:
+                    st.session_state['msgs'][i]['content'] = system_prompt
+                break
+        if not has_system_prompt:
+            st.session_state['msgs'].append(system_prompt_object)
 
         # Prediction
         with st.form(key='prediction'):
@@ -78,7 +95,9 @@ class Application:
                 model = joblib.load("model.joblib")
                 prediction = model.predict([feature_array])[0]
                 if prediction == 'interruption' or prediction == 'time pressure':
-                    st.session_state['dialog_bot'].append("You are experiencing {}! {}, how are you doing? I hope everything is going well in your life! You can tell me what you want to share and I will listen with patience and understanding and share advice and ideas with you. We can chat, share our feelings or discuss something that interests you, whether it's a light-hearted topic or something about your education or life.".format(prediction, st.session_state['name']))
+                    content = "You are experiencing {}! {}, how are you doing? I hope everything is going well in your life! You can tell me what you want to share and I will listen with patience and understanding and share advice and ideas with you. We can chat, share our feelings or discuss something that interests you, whether it's a light-hearted topic or something about your education or life.".format(prediction, st.session_state['name'])
+                    st.session_state['dialog_bot'].append(content)
+                    st.session_state['msgs'].append({"role": "assistant", "content": content})
                 else:
                     st.write("You are not experiencing any stress.")
             except Exception as e:
@@ -103,9 +122,11 @@ class Application:
                 st.session_state['msgs'].append(chat.choices[0].message)
             st.session_state['dialog_user'].append(user_input)
             st.session_state['dialog_bot'].append(output)
+            print(st.session_state['msgs'])
+            
         
         if st.session_state['dialog_bot']:
-            if st.session_state['dialog_bot'] == st.session_state['dialog_user']:
+            if len(st.session_state['dialog_bot']) == len(st.session_state['dialog_user']):
                 for i in range(len(st.session_state['dialog_bot'])-1, -1, -1):
                     message(st.session_state["dialog_bot"][i], key=str(i))
                     message(st.session_state['dialog_user'][i], is_user=True, key=str(i) + '_user')
